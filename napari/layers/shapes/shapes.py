@@ -13,6 +13,7 @@ from typing import (
 import numpy as np
 import numpy.typing as npt
 import pandas as pd
+from psygnal.containers import Selection
 from vispy.color import get_color_names
 
 from napari.layers.base import Layer, no_op
@@ -543,7 +544,7 @@ class Shapes(Layer):
         self._value = (None, None)
         self._value_stored = (None, None)
         self._moving_value: tuple[Optional[int], Optional[int]] = (None, None)
-        self._selected_data = set()
+        self._selected_data: Selection[int] = Selection()
         self._selected_data_stored = set()
         self._selected_data_history = set()
         self._selected_box = None
@@ -1242,8 +1243,18 @@ class Shapes(Layer):
 
     @selected_data.setter
     def selected_data(self, selected_data):
-        self._selected_data = set(selected_data)
+        self._selected_data.clear()
+        self._selected_data.update(set(selected_data))
+
         self._selected_box = self.interaction_box(self._selected_data)
+
+        # self._selected_view = list(
+        #    np.intersect1d(
+        #        np.array(list(self._selected_data)),
+        #        self._indices_view,
+        #        return_indices=True,
+        #    )[2]
+        # )
 
         # Update properties based on selected shapes
         if len(selected_data) > 0:
@@ -2415,7 +2426,7 @@ class Shapes(Layer):
             the box, and the last point is the location of the rotation handle
             that can be used to rotate the box
         """
-        if isinstance(index, (list, np.ndarray, set)):
+        if isinstance(index, (list, np.ndarray, set, Selection)):
             if len(index) == 0:
                 box = None
             elif len(index) == 1:
